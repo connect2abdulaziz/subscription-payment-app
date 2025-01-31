@@ -5,7 +5,6 @@ import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogHea
 import { Button } from '@/components/ui/button';
 import PlanCard from './plan-card';
 
-// Types for our subscription plans
 interface Plan {
   id: string;
   name: string;
@@ -15,7 +14,6 @@ interface Plan {
   priceId: string;
 }
 
-// Define subscription plans
 const subscriptionPlans: Plan[] = [
   {
     id: 'basic',
@@ -28,7 +26,7 @@ const subscriptionPlans: Plan[] = [
       '5 projects',
       '10GB storage'
     ],
-    priceId: process.env.BASIC_PLAN_PRICE_ID || ''
+    priceId: process.env.NEXT_PUBLIC_BASIC_PLAN_PRICE_ID || ''
   },
   {
     id: 'premium',
@@ -42,7 +40,7 @@ const subscriptionPlans: Plan[] = [
       '50GB storage',
       'Advanced analytics'
     ],
-    priceId: process.env.PREMIUM_PLAN_PRICE_ID || ''
+    priceId: process.env.NEXT_PUBLIC_PREMIUM_PLAN_PRICE_ID || ''
   },
   {
     id: 'enterprise',
@@ -56,19 +54,40 @@ const subscriptionPlans: Plan[] = [
       'Unlimited storage',
       'Dedicated account manager'
     ],
-    priceId: process.env.ENTERPRISE_PLAN_PRICE_ID || ''
+    priceId: process.env.NEXT_PUBLIC_ENTERPRISE_PLAN_PRICE_ID || ''
   }
 ];
-
 
 const SubscriptionPlans = () => {
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Log all price IDs on component mount
+  React.useEffect(() => {
+    console.log('Environment Variables Check:');
+    console.log('NEXT_PUBLIC_BASIC_PLAN_PRICE_ID:', process.env.NEXT_PUBLIC_BASIC_PLAN_PRICE_ID);
+    console.log('NEXT_PUBLIC_PREMIUM_PLAN_PRICE_ID:', process.env.NEXT_PUBLIC_PREMIUM_PLAN_PRICE_ID);
+    console.log('NEXT_PUBLIC_ENTERPRISE_PLAN_PRICE_ID:', process.env.NEXT_PUBLIC_ENTERPRISE_PLAN_PRICE_ID);
+    
+    console.log('Subscription Plans Check:');
+    subscriptionPlans.forEach(plan => {
+      console.log(`${plan.name} priceId:`, plan.priceId);
+    });
+  }, []);
+
   const handleSubscription = async (priceId: string) => {
     try {
+      console.log('handleSubscription called with priceId:', priceId);
+      
+      if (!priceId) {
+        console.error('Price ID is empty or undefined');
+        throw new Error('Invalid price ID');
+      }
+
       setLoading(true);
       setError(null);
+
+      console.log('Making API request with body:', JSON.stringify({ priceId }));
 
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
@@ -80,14 +99,21 @@ const SubscriptionPlans = () => {
         }),
       });
 
+      console.log('API Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error('Failed to create checkout session');
+        const errorData = await response.json();
+        console.error('API Error:', errorData);
+        throw new Error(errorData.message || 'Failed to create checkout session');
       }
 
-      const { checkoutUrl } = await response.json();
-      window.location.href = checkoutUrl;
+      const data = await response.json();
+      console.log('API Response data:', data);
+
+      window.location.href = data.checkoutUrl;
       
     } catch (err) {
+      console.error('Subscription error:', err);
       setError(err instanceof Error ? err.message : 'Something went wrong');
     } finally {
       setLoading(false);
