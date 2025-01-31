@@ -1,5 +1,6 @@
 'use client';
 
+import { Suspense } from 'react';
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,12 +8,11 @@ import { Button } from '@/components/ui/button';
 import { XCircle } from 'lucide-react';
 import Link from 'next/link';
 
-export default function CancelPage() {
+function CancelPageContent() {
   const searchParams = useSearchParams();
   const [reason, setReason] = useState<string>('');
   
   useEffect(() => {
-    // Get cancellation reason from URL if provided
     const cancelReason = searchParams.get('reason');
     if (cancelReason) {
       setReason(decodeURIComponent(cancelReason));
@@ -65,5 +65,13 @@ export default function CancelPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function CancelPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CancelPageContent />
+    </Suspense>
   );
 }
