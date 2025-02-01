@@ -1,21 +1,42 @@
 'use client';
 
-import { redirect } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { redirect, useSearchParams } from 'next/navigation';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { CheckCircle } from 'lucide-react';
-import Stripe from 'stripe';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-01-27.acacia',
-});
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SuccessPageContent />
+    </Suspense>
+  );
+}
 
-// @ts-ignore
-export default function SuccessPage({ searchParams }) {
-  const sessionId = Array.isArray(searchParams.session_id)
-    ? searchParams.session_id[0]
-    : searchParams.session_id;
+function SuccessPageContent() {
+  const searchParams = useSearchParams();
+  const sessionId = searchParams.get('session_id');
+  const [paymentStatus, setPaymentStatus] = useState('loading');
+  
+  useEffect(() => {
+    if (sessionId) {
+      // Call our API endpoint to verify the session
+      fetch(`/api/verify-session?session_id=${sessionId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success) {
+            setPaymentStatus('success');
+          } else {
+            setPaymentStatus('error');
+          }
+        })
+        .catch(() => {
+          setPaymentStatus('error');
+        });
+    }
+  }, [sessionId]);
 
   if (!sessionId) {
     redirect('/');
